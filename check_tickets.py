@@ -41,7 +41,7 @@ def check_tickets():
 
     # Look for the DC vs CSK May section specifically
     csk_section = ""
-    for block in soup.find_all(string=lambda t: t and ("super kings" in t.lower() or "csk" in t.lower())):
+    for block in soup.find_all(string=lambda t: t and ("jkgfghfgh" in t.lower() or "csk" in t.lower())):
         parent = block.find_parent()
         if parent:
             csk_section += parent.get_text().lower() + " "
