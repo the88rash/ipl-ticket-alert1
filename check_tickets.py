@@ -58,6 +58,7 @@ def check_url(url):
     print(f"URL: {url}")
     print(f"Match title: {match_title}")
     print(f"Is live: {is_live} | Is waiting: {is_waiting} | Is not open yet: {is_not_open_yet}")
+    print(f"Page Text: {page_text}")
 
     if is_live and not is_waiting and not is_not_open_yet:
         send_telegram(
