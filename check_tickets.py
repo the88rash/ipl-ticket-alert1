@@ -68,7 +68,7 @@ def check_tickets():
             "⚡ You have only 10 mins once you select seats!"
         )
         return True
-        elif is_waiting:
+    elif is_waiting:
          send_telegram(
             "🚨 *YOUR PREFERRED IPL TICKETS ARE COMING SOON!* 🚨\n\n"
             "🏏 *DC vs RCB — April 27*\n"
