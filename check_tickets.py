@@ -5,11 +5,11 @@ from bs4 import BeautifulSoup
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-# District.in page for DC vs CSK May
-URL = "https://www.district.in/events/tata-ipl-2026-match-48--delhi-capitals-vs-chennai-super-kings-buy-tickets"
+# District.in page for DC vs RCB April 27
+URL = "https://www.district.in/events/tata-ipl-2026-match-39--delhi-capitals-vs-royal-challengers-bengaluru-buy-tickets"
 
 KEYWORDS_LIVE = ["sale is live", "book tickets", "book now", "buy tickets"]
-KEYWORDS_WAITING = ["tickets available in", "coming soon", "notify me", "sale begins"]
+KEYWORDS_WAITING = ["Be the first to know when sale begins", "tickets available in", "coming soon", "notify me", "sale begins"]
 
 
 def send_telegram(message):
@@ -39,30 +39,30 @@ def check_tickets():
     soup = BeautifulSoup(response.text, "html.parser")
     page_text = soup.get_text().lower()
 
-    # Look for the DC vs CSK May section specifically
-    csk_section = ""
-    for block in soup.find_all(string=lambda t: t and ("super kings" in t.lower() or "csk" in t.lower())):
+    # Look for the DC vs RCB April 27 section specifically
+    rcb_section = ""
+    for block in soup.find_all(string=lambda t: t and ("royal challengers" in t.lower() or "rcb" in t.lower())):
         parent = block.find_parent()
         if parent:
-            csk_section += parent.get_text().lower() + " "
+            rcb_section += parent.get_text().lower() + " "
 
-    # Check the CSK section first, fall back to full page
+    # Check the RCB section first, fall back to full page
     search_text = page_text
 
     is_live = any(kw in search_text for kw in KEYWORDS_LIVE)
     is_waiting = any(kw in search_text for kw in KEYWORDS_WAITING)
 
-    print(f"CSK Section: {csk_section}")
-    print(f"Page fetched. CSK sectiON found: {bool(csk_section)}")
+    print(f"RCB Section: {rcb_section}")
+    print(f"Page fetched. RCB sectION found: {bool(rcb_section)}")
     print(f"Is live: {is_live} | Is waiting: {is_waiting}")
 
     if is_live and not is_waiting:
         send_telegram(
             "🚨 *IPL TICKETS ARE LIVE!* 🚨\n\n"
-            "🏏 *DC vs CSK — May*\n"
+            "🏏 *DC vs RCB — April 27*\n"
             "📍 Arun Jaitley Stadium, Delhi\n\n"
             "👉 Book NOW before they sell out:\n"
-            "https://www.district.in/events/tata-ipl-2026-match-48--delhi-capitals-vs-chennai-super-kings-buy-tickets"
+            "https://www.district.in/events/tata-ipl-2026-match-39--delhi-capitals-vs-royal-challengers-bengaluru-buy-tickets"
             "⚡ You have only 10 mins once you select seats!"
         )
         return True
