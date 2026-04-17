@@ -2,27 +2,56 @@ name: IPL Ticket Checker
 
 on:
   schedule:
-    # Runs every 15 minutes
-    - cron: "*/15 * * * *"
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+    - cron: "*/15 * * * *"  # every 15 minutes
+  workflow_dispatch:
 
 jobs:
-  check-tickets:
+  # Step 1: Poll Telegram for new URLs sent by user
+  listen-bot:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Poll Telegram for new URLs
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python listen_bot.py
+
+      - name: Commit updated urls.txt if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add urls.txt .last_update_id
+          git diff --staged --quiet || git commit -m "bot: update tracked URLs"
+          git push
+
+  # Step 2: Check all tracked URLs for ticket availability
+  check-tickets:
+    runs-on: ubuntu-latest
+    needs: listen-bot  # runs after listen-bot so it has the latest urls.txt
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install dependencies
         run: pip install requests beautifulsoup4
 
-      - name: Run ticket checker
+      - name: Check ticket availability
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
