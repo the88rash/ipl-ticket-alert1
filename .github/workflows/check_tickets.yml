@@ -34,6 +34,7 @@ jobs:
           git add urls.txt
           [ -f .last_update_id ] && git add .last_update_id || true
           git diff --staged --quiet || git commit -m "bot: update tracked URLs"
+          git pull --rebase origin ${{ github.ref_name }}
           git push
 
   # Step 2: Check all tracked URLs for ticket availability
