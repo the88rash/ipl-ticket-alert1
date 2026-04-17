@@ -5,12 +5,19 @@ from bs4 import BeautifulSoup
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-KEYWORDS_LIVE = ["sale is live", "pre-sale is live", "book now", "buy tickets", "book tickets"]
-KEYWORDS_WAITING = ["tickets available in", "coming soon"]
-KEYWORDS_NOT_OPEN_YET = ["be the first to know when sale begins"]
+# Keywords for District by Zomato
+DISTRICT_KEYWORDS_LIVE = ["sale is live", "pre-sale is live", "book now", "buy tickets"]
+DISTRICT_KEYWORDS_WAITING = ["tickets available in", "coming soon"]
+DISTRICT_KEYWORDS_NOT_OPEN_YET = ["be the first to know when sale begins"]
+
+# Keywords for BookMyShow
+BMS_KEYWORDS_LIVE = ["book now", "login to book"]
+BMS_KEYWORDS_WAITING = ["coming soon"]
+BMS_KEYWORDS_NOT_OPEN_YET = ["coming soon"]
 
 URLS_FILE = "urls.txt"
-IPL_BOOKING_URL = "https://www.district.in/events/ipl-ticket-booking"
+IPL_BOOKING_URL_DISTRICT = "https://www.district.in/events/ipl-ticket-booking"
+IPL_BOOKING_URL_BMS = "https://in.bookmyshow.com/sports/ipl-2026"
 
 
 def send_telegram(message):
@@ -30,8 +37,12 @@ def get_match_title(page_text):
     for line in page_text.splitlines():
         line = line.strip()
         if line:
-            return line[:100]  # cap at 100 chars
+            return line[:100]
     return "Unknown Match"
+
+
+def is_bookmyshow_url(url):
+    return "bookmyshow.com" in url
 
 
 def check_url(url):
@@ -51,30 +62,46 @@ def check_url(url):
 
     match_title = get_match_title(page_text)
 
-    is_live = any(kw in page_text_lower for kw in KEYWORDS_LIVE)
-    is_waiting = any(kw in page_text_lower for kw in KEYWORDS_WAITING)
-    is_not_open_yet = any(kw in page_text_lower for kw in KEYWORDS_NOT_OPEN_YET)
+    # Pick keywords and booking URL based on platform
+    if is_bookmyshow_url(url):
+        keywords_live = BMS_KEYWORDS_LIVE
+        keywords_waiting = BMS_KEYWORDS_WAITING
+        keywords_not_open_yet = BMS_KEYWORDS_NOT_OPEN_YET
+        all_ipl_url = IPL_BOOKING_URL_BMS
+        platform = "BookMyShow"
+    else:
+        keywords_live = DISTRICT_KEYWORDS_LIVE
+        keywords_waiting = DISTRICT_KEYWORDS_WAITING
+        keywords_not_open_yet = DISTRICT_KEYWORDS_NOT_OPEN_YET
+        all_ipl_url = IPL_BOOKING_URL_DISTRICT
+        platform = "District by Zomato"
+
+    is_live = any(kw in page_text_lower for kw in keywords_live)
+    is_waiting = any(kw in page_text_lower for kw in keywords_waiting)
+    is_not_open_yet = any(kw in page_text_lower for kw in keywords_not_open_yet)
 
     print(f"URL: {url}")
+    print(f"Platform: {platform}")
     print(f"Match title: {match_title}")
     print(f"Is live: {is_live} | Is waiting: {is_waiting} | Is not open yet: {is_not_open_yet}")
-    print(f"Page Text: {page_text}")
 
-    if is_live and not is_waiting and not is_not_open_yet:
+    if is_live and not is_waiting:
         send_telegram(
             "🚨 *YOUR PREFERRED IPL TICKETS ARE LIVE!* 🚨\n\n"
-            f"🏏 *{match_title}*\n\n"
+            f"🏏 *{match_title}*\n"
+            f"🎫 Platform: {platform}\n\n"
             f"👉 Book NOW before they sell out:\n{url}\n\n"
-            f"🎟️ All IPL matches:\n{IPL_BOOKING_URL}\n\n"
+            f"🎟️ All IPL matches:\n{all_ipl_url}\n\n"
             "⚡ You have only 10 mins once you select seats!"
         )
         return True
     elif is_waiting:
         send_telegram(
             "🚨 *YOUR PREFERRED IPL TICKETS ARE COMING SOON!* 🚨\n\n"
-            f"🏏 *{match_title}*\n\n"
+            f"🏏 *{match_title}*\n"
+            f"🎫 Platform: {platform}\n\n"
             f"👉 SET A REMINDER ON PHONE:\n{url}\n\n"
-            f"🎟️ All IPL matches:\n{IPL_BOOKING_URL}"
+            f"🎟️ All IPL matches:\n{all_ipl_url}"
         )
         return False
     elif is_not_open_yet:
