@@ -54,6 +54,15 @@ def check_url(url):
         )
     }
     response = requests.get(url, headers=headers, timeout=15)
+
+    if response.status_code == 403:
+        print(f"403 Forbidden — {url} is blocking automated requests.")
+        send_telegram(
+            f"⚠️ *Could not check this URL* — the site is blocking automated requests.\n\n"
+            f"🔗 Please check manually:\n{url}"
+        )
+        return False
+
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, "html.parser")
@@ -125,4 +134,8 @@ def load_urls():
 if __name__ == "__main__":
     urls = load_urls()
     for url in urls:
-        check_url(url)
+        try:
+            check_url(url)
+        except Exception as e:
+            print(f"Error checking {url}: {e}")
+            send_telegram(f"⚠️ Error checking URL:\n`{url}`\n{str(e)[:100]}")
