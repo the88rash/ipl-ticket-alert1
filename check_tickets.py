@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-KEYWORDS_LIVE = ["sale is live", "pre-sale is live", "book now", "buy tickets"]
+KEYWORDS_LIVE = ["sale is live", "pre-sale is live", "book now", "buy tickets", "book tickets"]
 KEYWORDS_WAITING = ["tickets available in", "coming soon"]
 KEYWORDS_NOT_OPEN_YET = ["be the first to know when sale begins"]
 
@@ -59,7 +59,7 @@ def check_url(url):
     print(f"Match title: {match_title}")
     print(f"Is live: {is_live} | Is waiting: {is_waiting} | Is not open yet: {is_not_open_yet}")
 
-    if is_live and not is_waiting:
+    if is_live and not is_waiting and not is_not_open_yet:
         send_telegram(
             "🚨 *YOUR PREFERRED IPL TICKETS ARE LIVE!* 🚨\n\n"
             f"🏏 *{match_title}*\n\n"
