@@ -7,11 +7,16 @@ TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 URLS_FILE = "urls.txt"
 OFFSET_FILE = ".last_update_id"
 
-KEYWORDS_LIVE = ["sale is live", "pre-sale is live", "book now", "buy tickets"]
-KEYWORDS_WAITING = ["tickets available in", "coming soon"]
-KEYWORDS_NOT_OPEN_YET = ["be the first to know when sale begins"]
+DISTRICT_KEYWORDS_LIVE = ["sale is live", "pre-sale is live", "book now", "buy tickets"]
+DISTRICT_KEYWORDS_WAITING = ["tickets available in", "coming soon"]
+DISTRICT_KEYWORDS_NOT_OPEN_YET = ["be the first to know when sale begins"]
 
-IPL_BOOKING_URL = "https://www.district.in/events/ipl-ticket-booking"
+BMS_KEYWORDS_LIVE = ["book now", "login to book"]
+BMS_KEYWORDS_WAITING = ["coming soon"]
+BMS_KEYWORDS_NOT_OPEN_YET = ["coming soon"]
+
+IPL_BOOKING_URL_DISTRICT = "https://www.district.in/events/ipl-ticket-booking"
+IPL_BOOKING_URL_BMS = "https://in.bookmyshow.com/sports/ipl-2026"
 
 
 def get_updates(offset=None):
@@ -60,6 +65,19 @@ def save_offset(offset):
         f.write(str(offset))
 
 
+def is_valid_url(text):
+    return (
+        text.startswith("https://www.district.in") or
+        text.startswith("https://district.in") or
+        text.startswith("https://in.bookmyshow.com") or
+        text.startswith("https://bookmyshow.com")
+    )
+
+
+def is_bookmyshow_url(url):
+    return "bookmyshow.com" in url
+
+
 def get_match_title(page_text):
     for line in page_text.splitlines():
         line = line.strip()
@@ -71,7 +89,7 @@ def get_match_title(page_text):
 def run_status_check(urls):
     """Immediately check all tracked URLs and report status to Telegram."""
     if not urls:
-        send_telegram("📋 No URLs being tracked yet. Send a district.in URL to add one!")
+        send_telegram("📋 No URLs being tracked yet. Send a district.in or bookmyshow.com URL to add one!")
         return
 
     send_telegram(f"🔍 Checking {len(urls)} match(es) right now...")
@@ -93,22 +111,29 @@ def run_status_check(urls):
             page_text_lower = page_text.lower()
             match_title = get_match_title(page_text)
 
-            is_live = any(kw in page_text_lower for kw in KEYWORDS_LIVE)
-            is_waiting = any(kw in page_text_lower for kw in KEYWORDS_WAITING)
-            is_not_open_yet = any(kw in page_text_lower for kw in KEYWORDS_NOT_OPEN_YET)
+            if is_bookmyshow_url(url):
+                keywords_live = BMS_KEYWORDS_LIVE
+                keywords_waiting = BMS_KEYWORDS_WAITING
+                platform = "BookMyShow"
+            else:
+                keywords_live = DISTRICT_KEYWORDS_LIVE
+                keywords_waiting = DISTRICT_KEYWORDS_WAITING
+                platform = "District by Zomato"
+
+            is_live = any(kw in page_text_lower for kw in keywords_live)
+            is_waiting = any(kw in page_text_lower for kw in keywords_waiting)
 
             if is_live and not is_waiting:
                 status = "🟢 *LIVE — Book now!*"
             elif is_waiting:
                 status = "🟡 *Coming soon*"
-            elif is_not_open_yet:
-                status = "🔴 *Not open yet*"
             else:
                 status = "🔴 *Not open yet*"
 
             send_telegram(
                 f"{status}\n\n"
                 f"🏏 *{match_title}*\n"
+                f"🎫 {platform}\n"
                 f"🔗 {url}"
             )
 
@@ -141,12 +166,14 @@ def process_updates():
 
         print(f"Received message: {text}")
 
-        if text.startswith("https://www.district.in") or text.startswith("https://district.in"):
+        if is_valid_url(text):
             if text not in urls:
                 urls.append(text)
                 changed = True
+                platform = "BookMyShow" if is_bookmyshow_url(text) else "District by Zomato"
                 send_telegram(
                     f"✅ *URL added!* I'll start checking this match for ticket availability.\n\n"
+                    f"🎫 Platform: {platform}\n"
                     f"`{text}`\n\n"
                     f"You'll get an alert when tickets go live 🎟️"
                 )
@@ -162,7 +189,7 @@ def process_updates():
                 url_list = "\n".join([f"• `{u}`" for u in urls])
                 send_telegram(f"📋 *Currently tracking {len(urls)} URL(s):*\n\n{url_list}")
             else:
-                send_telegram("📋 No URLs being tracked yet. Send me a district.in URL to add one!")
+                send_telegram("📋 No URLs being tracked yet. Send a district.in or bookmyshow.com URL to add one!")
 
         elif text.lower() == "/clear":
             urls = []
@@ -185,7 +212,7 @@ def process_updates():
         else:
             send_telegram(
                 "👋 *IPL Ticket Bot*\n\n"
-                "Send me a `district.in` match URL and I'll track it for you!\n\n"
+                "Send me a `district.in` or `bookmyshow.com` match URL and I'll track it!\n\n"
                 "*Commands:*\n"
                 "• `/status` — check all tracked matches right now\n"
                 "• `/list` — see all tracked URLs\n"
