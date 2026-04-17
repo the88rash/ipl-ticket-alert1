@@ -6,7 +6,7 @@ TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
 # District.in page for DC vs RCB April 27
-URL = "https://www.district.in/events/tata-ipl-2026-match-35---delhi-capitals-vs-punjab-kings-buy-tickets"
+URL = "https://www.district.in/events/tata-ipl-2026-match-39--delhi-capitals-vs-royal-challengers-bengaluru-buy-tickets"
 
 KEYWORDS_LIVE = ["sale is live", "pre-sale is live", "book now", "buy tickets"]
 KEYWORDS_WAITING = ["tickets available in", "coming soon"]
@@ -61,20 +61,16 @@ def check_tickets():
     if is_live and not is_waiting:
         send_telegram(
             "🚨 *YOUR PREFERRED IPL TICKETS ARE LIVE!* 🚨\n\n"
-            "🏏 *DC vs RCB — April 27*\n"
-            "📍 Arun Jaitley Stadium, Delhi\n\n"
             "👉 Book NOW before they sell out:\n"
-            "{URL}"
+            "https://www.district.in/events/ipl-ticket-booking"
             "⚡ You have only 10 mins once you select seats!"
         )
         return True
     elif is_waiting:
         send_telegram(
             "🚨 *YOUR PREFERRED IPL TICKETS ARE COMING SOON!* 🚨\n\n"
-            "🏏 *DC vs RCB — April 27*\n"
-            "📍 Arun Jaitley Stadium, Delhi\n\n"
             "👉 SET A REMINDER ON PHONE:\n"
-            "{URL}"
+            "https://www.district.in/events/ipl-ticket-booking"
         )
         return False
     else:
