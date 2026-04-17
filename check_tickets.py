@@ -6,7 +6,7 @@ TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
 # District.in page for DC vs CSK May
-URL = "https://www.district.in/events/ipl-ticket-booking"
+URL = "https://www.district.in/events/tata-ipl-2026-match-48--delhi-capitals-vs-chennai-super-kings-buy-tickets"
 
 KEYWORDS_LIVE = ["sale is live", "book tickets", "book now", "buy tickets"]
 KEYWORDS_WAITING = ["tickets available in", "coming soon", "notify me", "sale begins"]
@@ -47,7 +47,7 @@ def check_tickets():
             csk_section += parent.get_text().lower() + " "
 
     # Check the CSK section first, fall back to full page
-    search_text = csk_section if csk_section else page_text
+    search_text = page_text
 
     is_live = any(kw in search_text for kw in KEYWORDS_LIVE)
     is_waiting = any(kw in search_text for kw in KEYWORDS_WAITING)
@@ -62,7 +62,7 @@ def check_tickets():
             "🏏 *DC vs CSK — May*\n"
             "📍 Arun Jaitley Stadium, Delhi\n\n"
             "👉 Book NOW before they sell out:\n"
-            "https://www.district.in/events/delhi-capitals-team\n\n"
+            "https://www.district.in/events/tata-ipl-2026-match-48--delhi-capitals-vs-chennai-super-kings-buy-tickets"
             "⚡ You have only 10 mins once you select seats!"
         )
         return True
