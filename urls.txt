@@ -1,0 +1,3 @@
+# URLs to check for ticket availability
+# Add more by sending a district.in URL to your Telegram bot
+https://www.district.in/events/tata-ipl-2026-match-39--delhi-capitals-vs-royal-challengers-bengaluru-buy-tickets
