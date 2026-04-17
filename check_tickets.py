@@ -10,7 +10,7 @@ URL = "https://www.district.in/events/tata-ipl-2026-match-39--delhi-capitals-vs-
 
 KEYWORDS_LIVE = ["sale is live", "pre-sale is live", "book now", "buy tickets"]
 KEYWORDS_WAITING = ["tickets available in", "coming soon"]
-KEYWORDS_NOT_OPEN_YET = ["Be the first to know when sale begins"]
+KEYWORDS_NOT_OPEN_YET = ["be the first to know when sale begins"]
 
 
 def send_telegram(message):
