@@ -69,7 +69,7 @@ def check_tickets():
         )
         return True
     elif is_waiting:
-         send_telegram(
+        send_telegram(
             "🚨 *YOUR PREFERRED IPL TICKETS ARE COMING SOON!* 🚨\n\n"
             "🏏 *DC vs RCB — April 27*\n"
             "📍 Arun Jaitley Stadium, Delhi\n\n"
