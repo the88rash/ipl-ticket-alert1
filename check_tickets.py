@@ -52,6 +52,7 @@ def check_tickets():
     is_live = any(kw in search_text for kw in KEYWORDS_LIVE)
     is_waiting = any(kw in search_text for kw in KEYWORDS_WAITING)
 
+    print(f"CSK Section: {csk_section}")
     print(f"Page fetched. CSK sectiON found: {bool(csk_section)}")
     print(f"Is live: {is_live} | Is waiting: {is_waiting}")
 
