@@ -75,8 +75,8 @@ def check_tickets():
             "📍 Arun Jaitley Stadium, Delhi\n\n"
             "👉 SET A REMINDER ON PHONE:\n"
             "https://www.district.in/events/tata-ipl-2026-match-39--delhi-capitals-vs-royal-challengers-bengaluru-buy-tickets"
-        )  
-            return False
+        )
+        return False
     else:
         print("Tickets not live yet.")
         return False
