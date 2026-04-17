@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-# District.in page for DC vs RCB April 27
+# District.in page for DC vs CSK May
 URL = "https://www.district.in/events/delhi-capitals-team"
 
 KEYWORDS_LIVE = ["book tickets", "book now", "buy tickets"]
@@ -39,26 +39,26 @@ def check_tickets():
     soup = BeautifulSoup(response.text, "html.parser")
     page_text = soup.get_text().lower()
 
-    # Look for the DC vs RCB April 27 section specifically
-    rcb_section = ""
-    for block in soup.find_all(string=lambda t: t and ("royal challengers" in t.lower() or "rcb" in t.lower())):
+    # Look for the DC vs CSK May section specifically
+    csk_section = ""
+    for block in soup.find_all(string=lambda t: t and ("super kings" in t.lower() or "csk" in t.lower())):
         parent = block.find_parent()
         if parent:
-            rcb_section += parent.get_text().lower() + " "
+            csk_section += parent.get_text().lower() + " "
 
-    # Check the RCB section first, fall back to full page
-    search_text = rcb_section if rcb_section else page_text
+    # Check the CSK section first, fall back to full page
+    search_text = csk_section if csk_section else page_text
 
     is_live = any(kw in search_text for kw in KEYWORDS_LIVE)
     is_waiting = any(kw in search_text for kw in KEYWORDS_WAITING)
 
-    print(f"Page fetched. RCB section found: {bool(rcb_section)}")
+    print(f"Page fetched. CSK section found: {bool(csk_section)}")
     print(f"Is live: {is_live} | Is waiting: {is_waiting}")
 
     if is_live and not is_waiting:
         send_telegram(
             "🚨 *IPL TICKETS ARE LIVE!* 🚨\n\n"
-            "🏏 *DC vs RCB — April 27, 7:30 PM*\n"
+            "🏏 *DC vs CSK — May*\n"
             "📍 Arun Jaitley Stadium, Delhi\n\n"
             "👉 Book NOW before they sell out:\n"
             "https://www.district.in/events/delhi-capitals-team\n\n"
