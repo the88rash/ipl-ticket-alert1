@@ -1,11 +1,17 @@
 import os
-import json
 import requests
+from bs4 import BeautifulSoup
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 URLS_FILE = "urls.txt"
-OFFSET_FILE = ".last_update_id"  # tracks last processed Telegram message
+OFFSET_FILE = ".last_update_id"
+
+KEYWORDS_LIVE = ["sale is live", "pre-sale is live", "book now", "buy tickets"]
+KEYWORDS_WAITING = ["tickets available in", "coming soon"]
+KEYWORDS_NOT_OPEN_YET = ["be the first to know when sale begins"]
+
+IPL_BOOKING_URL = "https://www.district.in/events/ipl-ticket-booking"
 
 
 def get_updates(offset=None):
@@ -54,6 +60,62 @@ def save_offset(offset):
         f.write(str(offset))
 
 
+def get_match_title(page_text):
+    for line in page_text.splitlines():
+        line = line.strip()
+        if line:
+            return line[:100]
+    return "Unknown Match"
+
+
+def run_status_check(urls):
+    """Immediately check all tracked URLs and report status to Telegram."""
+    if not urls:
+        send_telegram("📋 No URLs being tracked yet. Send a district.in URL to add one!")
+        return
+
+    send_telegram(f"🔍 Checking {len(urls)} match(es) right now...")
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        )
+    }
+
+    for url in urls:
+        try:
+            response = requests.get(url, headers=headers, timeout=15)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "html.parser")
+            page_text = soup.get_text()
+            page_text_lower = page_text.lower()
+            match_title = get_match_title(page_text)
+
+            is_live = any(kw in page_text_lower for kw in KEYWORDS_LIVE)
+            is_waiting = any(kw in page_text_lower for kw in KEYWORDS_WAITING)
+            is_not_open_yet = any(kw in page_text_lower for kw in KEYWORDS_NOT_OPEN_YET)
+
+            if is_live and not is_waiting:
+                status = "🟢 *LIVE — Book now!*"
+            elif is_waiting:
+                status = "🟡 *Coming soon*"
+            elif is_not_open_yet:
+                status = "🔴 *Not open yet*"
+            else:
+                status = "🔴 *Not open yet*"
+
+            send_telegram(
+                f"{status}\n\n"
+                f"🏏 *{match_title}*\n"
+                f"🔗 {url}"
+            )
+
+        except Exception as e:
+            send_telegram(f"⚠️ Could not check:\n`{url}`\nError: {str(e)[:100]}")
+
+
 def process_updates():
     offset = load_offset()
     updates = get_updates(offset)
@@ -67,13 +129,12 @@ def process_updates():
 
     for update in updates:
         update_id = update["update_id"]
-        save_offset(update_id + 1)  # mark as processed
+        save_offset(update_id + 1)
 
         message = update.get("message", {})
         chat_id = str(message.get("chat", {}).get("id", ""))
         text = message.get("text", "").strip()
 
-        # Only process messages from your own chat
         if chat_id != TELEGRAM_CHAT_ID:
             print(f"Ignoring message from unknown chat: {chat_id}")
             continue
@@ -92,7 +153,9 @@ def process_updates():
                 print(f"Added URL: {text}")
             else:
                 send_telegram(f"ℹ️ Already tracking this URL:\n`{text}`")
-                print(f"URL already exists: {text}")
+
+        elif text.lower() == "/status":
+            run_status_check(urls)
 
         elif text.lower() == "/list":
             if urls:
@@ -115,7 +178,7 @@ def process_updates():
                     changed = True
                     send_telegram(f"🗑️ Removed:\n`{to_remove}`")
                 else:
-                    send_telegram(f"⚠️ URL not found in tracking list.")
+                    send_telegram("⚠️ URL not found in tracking list.")
             else:
                 send_telegram("Usage: `/remove <url>`")
 
@@ -124,6 +187,7 @@ def process_updates():
                 "👋 *IPL Ticket Bot*\n\n"
                 "Send me a `district.in` match URL and I'll track it for you!\n\n"
                 "*Commands:*\n"
+                "• `/status` — check all tracked matches right now\n"
                 "• `/list` — see all tracked URLs\n"
                 "• `/remove <url>` — stop tracking a URL\n"
                 "• `/clear` — remove all URLs"
