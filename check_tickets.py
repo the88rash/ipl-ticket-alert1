@@ -8,8 +8,8 @@ TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 # District.in page for DC vs CSK May
 URL = "https://www.district.in/events/ipl-ticket-booking"
 
-KEYWORDS_LIVE = ["Book tickets", "book now", "buy tickets"]
-KEYWORDS_WAITING = ["coming soon", "notify me", "sale begins"]
+KEYWORDS_LIVE = ["sale is live", "book tickets", "book now", "buy tickets"]
+KEYWORDS_WAITING = ["tickets available in", "coming soon", "notify me", "sale begins"]
 
 
 def send_telegram(message):
@@ -41,7 +41,7 @@ def check_tickets():
 
     # Look for the DC vs CSK May section specifically
     csk_section = ""
-    for block in soup.find_all(string=lambda t: t and ("jkgfghfgh" in t.lower() or "hfghjfghfh" in t.lower())):
+    for block in soup.find_all(string=lambda t: t and ("super kings" in t.lower() or "csk" in t.lower())):
         parent = block.find_parent()
         if parent:
             csk_section += parent.get_text().lower() + " "
@@ -52,7 +52,7 @@ def check_tickets():
     is_live = any(kw in search_text for kw in KEYWORDS_LIVE)
     is_waiting = any(kw in search_text for kw in KEYWORDS_WAITING)
 
-    print(f"Page fetched. CSK sectioN found: {bool(csk_section)}")
+    print(f"Page fetched. CSK sectiON found: {bool(csk_section)}")
     print(f"Is live: {is_live} | Is waiting: {is_waiting}")
 
     if is_live and not is_waiting:
