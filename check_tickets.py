@@ -8,8 +8,9 @@ TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 # District.in page for DC vs RCB April 27
 URL = "https://www.district.in/events/tata-ipl-2026-match-39--delhi-capitals-vs-royal-challengers-bengaluru-buy-tickets"
 
-KEYWORDS_LIVE = ["sale is live", "book tickets", "book now", "buy tickets"]
-KEYWORDS_WAITING = ["Be the first to know when sale begins", "tickets available in", "coming soon", "notify me", "sale begins"]
+KEYWORDS_LIVE = ["sale is live", "pre-sale is live", "book now", "buy tickets"]
+KEYWORDS_WAITING = ["tickets available in", "coming soon", "notify me"]
+KEYWORDS_NOT_OPEN_YET = ["Be the first to know when sale begins"]
 
 
 def send_telegram(message):
@@ -51,14 +52,15 @@ def check_tickets():
 
     is_live = any(kw in search_text for kw in KEYWORDS_LIVE)
     is_waiting = any(kw in search_text for kw in KEYWORDS_WAITING)
+    is_not_open_yet = any(kw in search_text for kw in KEYWORDS_NOT_OPEN_YET)
 
-    print(f"RCB Section: {rcb_section}")
+    print(f"Page Text: {page_text}")
     print(f"Page fetched. RCB sectION found: {bool(rcb_section)}")
-    print(f"Is live: {is_live} | Is waiting: {is_waiting}")
+    print(f"Is live: {is_live} | Is waiting: {is_waiting} | Is not open yet: {is_not_open_yet}")
 
     if is_live and not is_waiting:
         send_telegram(
-            "🚨 *IPL TICKETS ARE LIVE!* 🚨\n\n"
+            "🚨 *YOUR PREFERRED IPL TICKETS ARE LIVE!* 🚨\n\n"
             "🏏 *DC vs RCB — April 27*\n"
             "📍 Arun Jaitley Stadium, Delhi\n\n"
             "👉 Book NOW before they sell out:\n"
@@ -66,6 +68,15 @@ def check_tickets():
             "⚡ You have only 10 mins once you select seats!"
         )
         return True
+        else if is_waiting:
+         send_telegram(
+            "🚨 *YOUR PREFERRED IPL TICKETS ARE COMING SOON!* 🚨\n\n"
+            "🏏 *DC vs RCB — April 27*\n"
+            "📍 Arun Jaitley Stadium, Delhi\n\n"
+            "👉 SET A REMINDER ON PHONE:\n"
+            "https://www.district.in/events/tata-ipl-2026-match-39--delhi-capitals-vs-royal-challengers-bengaluru-buy-tickets"
+        )  
+            return False
     else:
         print("Tickets not live yet. Status: Coming Soon / Notify Me")
         return False
