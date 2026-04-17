@@ -62,7 +62,7 @@ def check_tickets():
         send_telegram(
             "🚨 *YOUR PREFERRED IPL TICKETS ARE LIVE!* 🚨\n\n"
             "👉 Book NOW before they sell out:\n"
-            "https://www.district.in/events/ipl-ticket-booking"
+            "https://www.district.in/events/ipl-ticket-booking\n"
             "⚡ You have only 10 mins once you select seats!"
         )
         return True
