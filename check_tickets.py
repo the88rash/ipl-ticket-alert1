@@ -6,7 +6,7 @@ TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
 # District.in page for DC vs RCB April 27
-URL = "https://www.district.in/events/tata-ipl-2026-match-39--delhi-capitals-vs-royal-challengers-bengaluru-buy-tickets"
+URL = "https://www.district.in/events/tata-ipl-2026-match-35---delhi-capitals-vs-punjab-kings-buy-tickets"
 
 KEYWORDS_LIVE = ["sale is live", "pre-sale is live", "book now", "buy tickets"]
 KEYWORDS_WAITING = ["tickets available in", "coming soon"]
@@ -64,7 +64,7 @@ def check_tickets():
             "🏏 *DC vs RCB — April 27*\n"
             "📍 Arun Jaitley Stadium, Delhi\n\n"
             "👉 Book NOW before they sell out:\n"
-            "https://www.district.in/events/tata-ipl-2026-match-39--delhi-capitals-vs-royal-challengers-bengaluru-buy-tickets"
+            "{URL}"
             "⚡ You have only 10 mins once you select seats!"
         )
         return True
@@ -74,7 +74,7 @@ def check_tickets():
             "🏏 *DC vs RCB — April 27*\n"
             "📍 Arun Jaitley Stadium, Delhi\n\n"
             "👉 SET A REMINDER ON PHONE:\n"
-            "https://www.district.in/events/tata-ipl-2026-match-39--delhi-capitals-vs-royal-challengers-bengaluru-buy-tickets"
+            "{URL}"
         )
         return False
     else:
