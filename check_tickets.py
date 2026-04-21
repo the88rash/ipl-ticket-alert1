@@ -136,7 +136,7 @@ def check_rcb_match(raw_url):
 
     if is_live and not is_waiting and not is_not_open_yet:
         send_telegram(
-            "*YOUR IPL TICKETS ARE LIVE!* 🚨\n\n"
+            "*Your IPL Tickets are LIVE!* 🚨\n\n"
             f"{match_label} {match_date}\n"
             f"Book NOW before they sell out:\n{page_url}\n\n"
             f"All RCB matches:\n{IPL_BOOKING_URL_RCB}\n\n"
@@ -145,7 +145,7 @@ def check_rcb_match(raw_url):
         return True
     elif is_waiting and not is_not_open_yet:
         send_telegram(
-            "*YOUR IPL TICKETS ARE COMING SOON!* ⏲️\n\n"
+            "*Your IPL Tickets are COMING SOON!* ⏲️\n\n"
             f"{match_label} {match_date}\n"
             f"SET A REMINDER:\n{page_url}\n\n"
             f"All RCB matches:\n{IPL_BOOKING_URL_RCB}"
@@ -211,7 +211,7 @@ def check_url(url):
 
     if is_live and not is_waiting and not is_not_open_yet:
         send_telegram(
-            " *YOUR IPL TICKETS ARE LIVE!* 🚨\n\n"
+            " *Your IPL Tickets are LIVE!* 🚨\n\n"
             f"{match_title}\n"
             f"Book NOW before they sell out:\n{url}\n\n"
             f"All IPL matches:\n{all_ipl_url}\n\n"
@@ -220,7 +220,7 @@ def check_url(url):
         return True
     elif is_waiting:
         send_telegram(
-            " *YOUR IPL TICKETS ARE COMING SOON!* ⏲️\n\n"
+            " *Your IPL Tickets are COMING SOON!* ⏲️\n\n"
             f"{match_title}\n"
             f"Set a REMINDER on phone:\n{url}\n\n"
             f"All IPL matches:\n{all_ipl_url}"
