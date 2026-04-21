@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import requests
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
@@ -8,6 +9,7 @@ TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 URLS_FILE = "urls.txt"
 OFFSET_FILE = ".last_update_id"
+MATCHES_FILE = "matches.json"
 
 DISTRICT_KEYWORDS_LIVE = ["sale is live", "pre-sale is live", "book now", "buy tickets"]
 DISTRICT_KEYWORDS_WAITING = ["tickets available in", "coming soon"]
@@ -19,9 +21,7 @@ BMS_KEYWORDS_NOT_OPEN_YET = ["coming soon"]
 
 IPL_BOOKING_URL_DISTRICT = "https://www.district.in/events/ipl-ticket-booking"
 IPL_BOOKING_URL_BMS = "https://in.bookmyshow.com/sports/ipl-2026"
-DISTRICT_IPL_LISTING = "https://www.district.in/events/ipl-ticket-booking"
 
-# Team name aliases for fuzzy matching
 TEAM_ALIASES = {
     # Abbreviations
     "dc": "delhi capitals",
@@ -124,17 +124,31 @@ def save_offset(offset):
         f.write(str(offset))
 
 
+def load_matches():
+    if not os.path.exists(MATCHES_FILE):
+        return []
+    with open(MATCHES_FILE) as f:
+        return json.load(f)
+
+
 def is_valid_url(text):
+    base = text.split("|")[0]  # handle pipe-separated RCB format
     return (
-        text.startswith("https://www.district.in") or
-        text.startswith("https://district.in") or
-        text.startswith("https://in.bookmyshow.com") or
-        text.startswith("https://bookmyshow.com")
+        base.startswith("https://www.district.in") or
+        base.startswith("https://district.in") or
+        base.startswith("https://in.bookmyshow.com") or
+        base.startswith("https://bookmyshow.com") or
+        base.startswith("https://shop.royalchallengers.com") or
+        base.startswith("https://royalchallengers.com")
     )
 
 
 def is_bookmyshow_url(url):
     return "bookmyshow.com" in url
+
+
+def is_rcb_url(url):
+    return "royalchallengers.com" in url.split("|")[0]
 
 
 def get_match_title(page_text):
@@ -148,14 +162,15 @@ def get_match_title(page_text):
 def normalize_query(text):
     """Expand team aliases and month names in the query."""
     text = text.lower()
+    # Try multi-word aliases first
+    for alias, expansion in sorted(TEAM_ALIASES.items(), key=lambda x: -len(x[0])):
+        if alias in text:
+            text = text.replace(alias, expansion)
     words = text.split()
     expanded = []
     for word in words:
-        # Strip punctuation for lookup
         clean = re.sub(r'[^a-z]', '', word)
-        if clean in TEAM_ALIASES:
-            expanded.append(TEAM_ALIASES[clean])
-        elif clean in MONTH_ALIASES:
+        if clean in MONTH_ALIASES:
             expanded.append(MONTH_ALIASES[clean])
         else:
             expanded.append(word)
@@ -163,93 +178,49 @@ def normalize_query(text):
 
 
 def similarity(a, b):
-    """Return similarity ratio between two strings."""
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
 
-def scrape_district_matches():
-    """Scrape the District IPL listing page and return list of (title, url) tuples."""
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/120.0.0.0 Safari/537.36"
-        )
-    }
-    try:
-        response = requests.get(DISTRICT_IPL_LISTING, headers=headers, timeout=15)
-        response.raise_for_status()
-    except Exception as e:
-        print(f"Failed to scrape District listing: {e}")
-        return []
-
-    soup = BeautifulSoup(response.text, "html.parser")
-    matches = []
-
-    # Find all links on the page that look like match event pages
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
-        # District match URLs contain "tata-ipl" or "ipl-2026"
-        if "tata-ipl" in href or "ipl-2026" in href:
-            full_url = href if href.startswith("http") else "https://www.district.in" + href
-            title = a.get_text(strip=True)
-            if title and len(title) > 5:
-                matches.append((title, full_url))
-
-    # Deduplicate by URL
-    seen = set()
-    unique = []
-    for title, url in matches:
-        if url not in seen:
-            seen.add(url)
-            unique.append((title, url))
-
-    print(f"Found {len(unique)} matches on District listing page.")
-    return unique
-
-
 def find_match_from_query(query):
-    """
-    Given a natural language query, scrape District and find the best matching event.
-    Returns (title, url) of best match, or None if no good match found.
-    Also returns list of close candidates if ambiguous.
-    """
+    """Match natural language query against local matches.json."""
     normalized_query = normalize_query(query)
     print(f"Normalized query: {normalized_query!r}")
 
-    matches = scrape_district_matches()
+    matches = load_matches()
     if not matches:
         return None, []
 
     scored = []
-    for title, url in matches:
-        score = similarity(normalized_query, title)
-        # Also check if all query words appear in the title
+    for m in matches:
+        title = m["match"]
+        date = m["date"]
+        search_text = f"{title} {date}".lower()
+
+        score = similarity(normalized_query, search_text)
         query_words = [w for w in normalized_query.split() if len(w) > 2]
-        word_hits = sum(1 for w in query_words if w in title.lower())
+        word_hits = sum(1 for w in query_words if w in search_text)
         word_score = word_hits / max(len(query_words), 1)
         combined = (score + word_score) / 2
-        scored.append((combined, title, url))
-        print(f"  Score {combined:.2f} | {title}")
 
-    scored.sort(reverse=True)
+        scored.append((combined, m))
+        print(f"  Score {combined:.2f} | {title} | {date}")
 
-    best_score, best_title, best_url = scored[0]
+    scored.sort(reverse=True, key=lambda x: x[0])
 
-    # Return best match if confident, or top 3 candidates if ambiguous
+    best_score, best_match = scored[0]
+
     if best_score >= 0.4:
-        return (best_title, best_url), []
+        return best_match, []
     elif best_score >= 0.25:
-        candidates = [(t, u) for _, t, u in scored[:3]]
+        candidates = [m for _, m in scored[:3]]
         return None, candidates
     else:
         return None, []
 
 
 def run_status_check(urls):
-    """Immediately check all tracked URLs and report status to Telegram."""
     if not urls:
-        send_telegram("📋 No URLs being tracked yet. Send a district.in URL or describe a match!")
+        send_telegram("📋 No URLs being tracked yet. Send a match description or URL to add one!")
         return
 
     send_telegram(f"🔍 Checking {len(urls)} match(es) right now...")
@@ -264,7 +235,48 @@ def run_status_check(urls):
 
     for url in urls:
         try:
+            # RCB: pipe-separated format — fetch listing page, check near match name
+            if is_rcb_url(url):
+                parts = url.split("|")
+                page_url = parts[0]
+                match_label = parts[1] if len(parts) == 3 else "RCB match"
+                match_date = parts[2] if len(parts) == 3 else ""
+                response = requests.get(page_url, headers=headers, timeout=15)
+                if response.status_code == 403:
+                    send_telegram(f"⚠️ *RCB site blocking check* — please check manually:\n{page_url}")
+                    continue
+                response.raise_for_status()
+                soup = BeautifulSoup(response.text, "html.parser")
+                page_lower = soup.get_text(separator="\n").lower()
+                idx = page_lower.find(match_label.lower())
+                if idx == -1:
+                    away = match_label.split("vs")[-1].strip().lower()
+                    idx = page_lower.find(away)
+                if idx == -1:
+                    status = "🔴 *Not found on page yet*"
+                else:
+                    surrounding = page_lower[max(0, idx - 100): idx + 400]
+                    is_live = any(kw in surrounding for kw in ["buy tickets", "book now", "add to cart"])
+                    is_waiting = any(kw in surrounding for kw in ["coming soon", "notify me"])
+                    if is_live and not is_waiting:
+                        status = "🟢 *LIVE — Book now!*"
+                    elif is_waiting:
+                        status = "🟡 *Coming soon*"
+                    else:
+                        status = "🔴 *Not open yet*"
+                send_telegram(
+                    f"{status}\n\n"
+                    f"🏏 *{match_label}*"
+                    + (f"\n📅 {match_date}" if match_date else "") +
+                    f"\n🎫 RCB Official Website\n"
+                    f"🔗 {page_url}"
+                )
+                continue
+
             response = requests.get(url, headers=headers, timeout=15)
+            if response.status_code == 403:
+                send_telegram(f"⚠️ *Site blocking check* — please check manually:\n{url}")
+                continue
             response.raise_for_status()
             soup = BeautifulSoup(response.text, "html.parser")
             page_text = soup.get_text()
@@ -327,15 +339,23 @@ def process_updates():
         print(f"Received message: {text}")
 
         if is_valid_url(text):
-            # Direct URL — add immediately
             if text not in urls:
                 urls.append(text)
                 changed = True
-                platform = "BookMyShow" if is_bookmyshow_url(text) else "District by Zomato"
+                if is_rcb_url(text):
+                    platform = "RCB Official Website"
+                    parts = text.split("|")
+                    display = parts[1] if len(parts) == 3 else text
+                elif is_bookmyshow_url(text):
+                    platform = "BookMyShow"
+                    display = text
+                else:
+                    platform = "District by Zomato"
+                    display = text
                 send_telegram(
                     f"✅ *URL added!* I'll start checking this match.\n\n"
                     f"🎫 Platform: {platform}\n"
-                    f"`{text}`\n\n"
+                    f"`{display}`\n\n"
                     f"You'll get an alert when tickets go live 🎟️"
                 )
             else:
@@ -370,7 +390,6 @@ def process_updates():
                 send_telegram("Usage: `/remove <url>`")
 
         elif text.lower().startswith("/"):
-            # Unknown command
             send_telegram(
                 "👋 *IPL Ticket Bot*\n\n"
                 "*Commands:*\n"
@@ -378,42 +397,63 @@ def process_updates():
                 "• `/list` — see all tracked URLs\n"
                 "• `/remove <url>` — stop tracking a URL\n"
                 "• `/clear` — remove all URLs\n\n"
-                "Or just describe a match (e.g. _DC vs RCB 27th April_) and I'll find and track it!"
+                "Or describe a match (e.g. _DC vs RCB 27th April_) and I'll find and track it!"
             )
 
         else:
-            # Natural language query — try to find match on District
-            send_telegram(f"🔍 Searching for *{text}* on District by Zomato...")
+            # Natural language — search local matches.json
+            send_telegram(f"🔍 Searching for *{text}*...")
             match, candidates = find_match_from_query(text)
 
             if match:
-                title, url = match
-                if url not in urls:
-                    urls.append(url)
+                url = match["url"]
+                title = match["match"]
+                date = match["date"]
+                venue = match["venue"]
+                platform = "BookMyShow" if match["platform"] == "bms" else "District by Zomato"
+
+                # For RCB matches, build pipe-separated entry
+                if match["platform"] == "rcb":
+                    # Extract short match label e.g. "RCB vs GT"
+                    parts = title.split(" - ", 1)
+                    short_label = parts[1] if len(parts) == 2 else title
+                    # Strip "Match XX - " prefix if present
+                    import re as _re
+                    short_label = _re.sub(r'^Match \d+ - ', '', short_label)
+                    entry = f"{url}|{short_label}|{date}"
+                else:
+                    entry = url
+
+                if entry not in urls:
+                    urls.append(entry)
                     changed = True
                     send_telegram(
                         f"✅ *Found and added!*\n\n"
-                        f"🏏 *{title}*\n\n"
-                        f"🔗 `{url}`\n\n"
+                        f"🏏 *{title}*\n"
+                        f"📅 {date}\n"
+                        f"📍 {venue}\n"
+                        f"🎫 {platform}\n\n"
                         f"You'll get an alert when tickets go live 🎟️"
                     )
                 else:
                     send_telegram(
-                        f"ℹ️ Already tracking this match:\n\n"
-                        f"🏏 *{title}*"
+                        f"ℹ️ Already tracking:\n\n"
+                        f"🏏 *{title}*\n"
+                        f"📅 {date}"
                     )
             elif candidates:
-                candidate_list = "\n".join([f"• {t}" for t, u in candidates])
+                candidate_list = "\n".join(
+                    [f"• *{m['match']}* — {m['date']}" for m in candidates]
+                )
                 send_telegram(
                     f"🤔 Found a few possible matches — can you be more specific?\n\n"
                     f"{candidate_list}\n\n"
-                    f"Try adding the date or full team names, or send the URL directly from:\n"
-                    f"{IPL_BOOKING_URL_DISTRICT}"
+                    f"Try adding the date or full team names."
                 )
             else:
                 send_telegram(
-                    f"😕 Couldn't find a match for *{text}* on District.\n\n"
-                    f"Try sending the URL directly from:\n"
+                    f"😕 Couldn't find *{text}* in the match list.\n\n"
+                    f"Try team names like _DC vs RCB_ or send the URL directly from:\n"
                     f"{IPL_BOOKING_URL_DISTRICT}"
                 )
 
