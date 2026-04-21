@@ -136,23 +136,19 @@ def check_rcb_match(raw_url):
 
     if is_live and not is_waiting and not is_not_open_yet:
         send_telegram(
-            "🚨 *YOUR PREFERRED IPL TICKETS ARE LIVE!* 🚨\n\n"
-            f"🏏 *{match_label}*\n"
-            f"📅 {match_date}\n"
-            f"🎫 Platform: RCB Official Website\n\n"
-            f"👉 Book NOW before they sell out:\n{page_url}\n\n"
-            f"🎟️ All RCB matches:\n{IPL_BOOKING_URL_RCB}\n\n"
+            "*YOUR IPL TICKETS ARE LIVE!* 🚨\n\n"
+            f"{match_label} {match_date}\n"
+            f"Book NOW before they sell out:\n{page_url}\n\n"
+            f"All RCB matches:\n{IPL_BOOKING_URL_RCB}\n\n"
             "⚡ You have only 10 mins once you select seats!"
         )
         return True
     elif is_waiting and not is_not_open_yet:
         send_telegram(
-            "🚨 *YOUR PREFERRED IPL TICKETS ARE COMING SOON!* 🚨\n\n"
-            f"🏏 *{match_label}*\n"
-            f"📅 {match_date}\n"
-            f"🎫 Platform: RCB Official Website\n\n"
-            f"👉 SET A REMINDER:\n{page_url}\n\n"
-            f"🎟️ All RCB matches:\n{IPL_BOOKING_URL_RCB}"
+            "*YOUR IPL TICKETS ARE COMING SOON!* ⏲️\n\n"
+            f"{match_label} {match_date}\n"
+            f"SET A REMINDER:\n{page_url}\n\n"
+            f"All RCB matches:\n{IPL_BOOKING_URL_RCB}"
         )
         return False
     else:
