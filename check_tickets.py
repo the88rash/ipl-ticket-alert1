@@ -215,21 +215,21 @@ def check_url(url):
 
     if is_live and not is_waiting and not is_not_open_yet:
         send_telegram(
-            "🚨 *YOUR PREFERRED IPL TICKETS ARE LIVE!* 🚨\n\n"
-            f"🏏 *{match_title}*\n"
-            f"🎫 Platform: {platform}\n\n"
-            f"👉 Book NOW before they sell out:\n{url}\n\n"
-            f"🎟️ All IPL matches:\n{all_ipl_url}\n\n"
+            " *YOUR IPL TICKETS ARE LIVE!* 🚨\n\n"
+            f" {match_title}\n"
+            f" Platform: {platform}\n\n"
+            f" Book NOW before they sell out:\n{url}\n\n"
+            f" All IPL matches:\n{all_ipl_url}\n\n"
             "⚡ You have only 10 mins once you select seats!"
         )
         return True
     elif is_waiting:
         send_telegram(
-            "🚨 *YOUR PREFERRED IPL TICKETS ARE COMING SOON!* 🚨\n\n"
-            f"🏏 *{match_title}*\n"
-            f"🎫 Platform: {platform}\n\n"
-            f"👉 SET A REMINDER ON PHONE:\n{url}\n\n"
-            f"🎟️ All IPL matches:\n{all_ipl_url}"
+            " *YOUR IPL TICKETS ARE COMING SOON!* ⏲️\n\n"
+            f" {match_title}\n"
+            f" Platform: {platform}\n\n"
+            f" Set a REMINDER on phone:\n{url}\n\n"
+            f" All IPL matches:\n{all_ipl_url}"
         )
         return False
     elif is_not_open_yet:
