@@ -1,5 +1,9 @@
 # 🏏 IPL Ticket Alert Bot
 
+[![Use this template](https://img.shields.io/badge/Use%20this%20template-2ea44f?style=for-the-badge&logo=github)](https://github.com/the88rash/ipl-ticket-alert1/generate)
+[![GitHub Actions](https://img.shields.io/badge/Powered%20by-GitHub%20Actions-blue?style=for-the-badge&logo=githubactions)](https://github.com/features/actions)
+[![Telegram](https://img.shields.io/badge/Alerts%20via-Telegram-26A5E4?style=for-the-badge&logo=telegram)](https://telegram.org)
+
 Automatically checks ticket availability for **any IPL 2026 match** across **District by Zomato**, **BookMyShow**, and the **RCB Official Website** — and sends you a **Telegram alert** the moment tickets go live.
 
 Runs entirely on **GitHub Actions** — no server or laptop needed.
